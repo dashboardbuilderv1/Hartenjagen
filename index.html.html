@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hartenjagen</title>
+<style>
+  :root {
+    --bg: #ddeef8;
+    --card: #c8e2f4;
+    --card2: #b8d8f0;
+    --border: #8bbedd;
+    --accent: #1565a0;
+    --text: #0d2d45;
+    --muted: #4a7ea0;
+    --green: #1a8a4a;
+    --orange: #c0620a;
+    --red: #b01a1a;
+    --white: #fff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  .header {
+    background: var(--accent);
+    color: var(--white);
+    text-align: center;
+    padding: 16px 16px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .header h1 { font-size: 1.4rem; font-weight: 900; letter-spacing: 1px; }
+  .header .suits { font-size: 1rem; opacity: 0.6; margin-top: 2px; letter-spacing: 6px; }
+
+  .screen { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .cb-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 48px;
+  }
+
+  .cb-label.checked { border-color: var(--accent); background: var(--card2); }
+
+  .cb-label input[type="checkbox"] {
+    width: 20px; height: 20px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .cb-label input[type="text"] {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    outline: none;
+    font-family: Arial, sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    width: 100%;
+    padding: 2px 0;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 15px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-appearance: none;
+  }
+
+  .btn:active { transform: scale(0.97); }
+  .btn.outline {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+  .btn.danger { background: var(--red); }
+  .btn.green-btn { background: var(--green); }
+  .btn + .btn { margin-top: 8px; }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .round-badge { font-size: 1rem; font-weight: 700; color: var(--accent); }
+
+  .chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+
+  .chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .chip span { color: var(--text); font-weight: 700; }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 280px; }
+
+  thead tr { background: var(--card2); }
+
+  th {
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  th:first-child { text-align: left; padding-left: 12px; }
+
+  td { padding: 8px; text-align: center; border-bottom: 1px solid var(--border); }
+  td:first-child { text-align: left; padding-left: 12px; color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr.subtotal { background: var(--card2); }
+  tr.subtotal td { font-weight: 700; font-size: 0.85rem; }
+  tr.avgrow { background: var(--card); }
+  tr.avgrow td { font-style: italic; font-size: 0.78rem; }
+
+  .c-high  { color: var(--red); }
+  .c-warn  { color: var(--orange); }
+  .c-ok    { color: var(--text); }
+  .c-green { color: var(--green); }
+
+  .entry-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .entry-title { font-size: 1rem; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
+
+  .cheatsheet {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+
+  .cheat-item { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--muted); }
+  .cheat-suit { color: var(--accent); font-size: 0.9rem; }
+  .cheat-val  { font-weight: 700; color: var(--accent); margin-left: 4px; }
+  .cheat-total {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    padding-top: 5px;
+    margin-top: 3px;
+    font-weight: 700;
+    color: var(--accent);
+    justify-content: space-between;
+  }
+
+  .entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+  .entry-field label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  input.score-input {
+    width: 100%;
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    padding: 10px;
+    text-align: center;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  input.score-input:focus { border-color: var(--accent); }
+
+  #winner-screen { text-align: center; padding: 32px 16px; }
+
+  .winner-card {
+    background: var(--card);
+    border: 3px solid var(--accent);
+    border-radius: 16px;
+    padding: 40px 24px;
+    box-shadow: 0 0 40px rgba(21,101,160,0.15);
+  }
+
+  .trophy { font-size: 3.5rem; margin-bottom: 12px; }
+  .winner-name { font-size: 2rem; font-weight: 900; color: var(--accent); margin-bottom: 6px; }
+  .winner-sub { font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+  .final-scores { font-size: 0.9rem; color: var(--muted); line-height: 2; margin-bottom: 24px; }
+
+  #banner {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--accent);
+    color: var(--white);
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    padding: 18px;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    animation: slideDown 0.35s ease;
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+  }
+
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: var(--white);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.85rem;
+    transition: transform 0.3s;
+    z-index: 300;
+    white-space: nowrap;
+    max-width: 90vw;
+    text-align: center;
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#9829; Hartenjagen</h1>
+  <div class="suits">&#9824; &#9827; &#9830; &#9829;</div>
+</div>
+
+<!-- SETUP -->
+<div id="setup-screen" class="screen active">
+  <div style="height:16px"></div>
+  <div class="section-label">Selecteer spelers</div>
+  <div class="checkbox-grid" id="player-checkboxes"></div>
+  <button class="btn" onclick="startFromCheckboxes()">Spel starten &#9829;</button>
+</div>
+
+<!-- GAME -->
+<div id="game-screen" class="screen">
+  <div style="height:12px"></div>
+  <div class="top-bar">
+    <div class="round-badge" id="round-label">Ronde 1</div>
+    <button class="btn outline" style="width:auto;padding:8px 14px" onclick="resetGame()">Nieuw spel</button>
+  </div>
+
+  <div class="chips-row" id="info-chips"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead id="table-head"></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="entry-card" id="entry-card">
+    <div class="entry-title" id="entry-title">Ronde 1 &mdash; scores invoeren</div>
+    <div class="cheatsheet">
+      <div class="cheat-item"><span class="cheat-suit">&#9829;</span> Harten x13 <span class="cheat-val">elk 1 pt</span></div>
+      <div class="cheat-item"><span class="cheat-suit">&#9824;</span> Schoppenvrouw <span class="cheat-val">5 pt</span></div>
+      <div class="cheat-item"><span class="cheat-suit">&#9827;</span> Klaverboer <span class="cheat-val">2 pt</span></div>
+      <div class="cheat-item cheat-total"><span>Totaal per ronde</span><span class="cheat-val">= 20 pt</span></div>
+    </div>
+    <div class="entry-grid" id="entry-grid"></div>
+    <button class="btn" onclick="submitRound()">Ronde bevestigen &#10003;</button>
+  </div>
+</div>
+
+<!-- WINNER -->
+<div id="winner-screen" class="screen">
+  <div style="height:24px"></div>
+  <div class="winner-card">
+    <div class="trophy">&#127942;</div>
+    <div class="winner-name" id="winner-name"></div>
+    <div class="winner-sub">heeft gewonnen!</div>
+    <hr class="divider">
+    <div class="final-scores" id="final-scores"></div>
+    <button class="btn" onclick="resetGame()">Nieuw spel</button>
+  </div>
+</div>
+
+<div style="text-align:center;padding:16px;font-size:0.72rem;color:var(--muted);opacity:0.7;">thanks to EmViTy (Martin) 2026</div>
+<div id="banner"></div>
+<div id="toast"></div>
+
+<script>
+  const DEFAULT_PLAYERS = ['Jeroen', 'Harald', 'Wim', 'Rik', 'Han', 'Martin'];
+  let players = [], rounds = [], totals = [], reductionMode = false;
+
+  function initCheckboxes() {
+    const cont = document.getElementById('player-checkboxes');
+    const fixed = DEFAULT_PLAYERS.map((name, i) =>
+      '<label class="cb-label checked" id="clabel-' + i + '">' +
+      '<input type="checkbox" id="cb-' + i + '" onchange="toggleCheck(' + i + ')" checked>' +
+      name + '</label>').join('');
+    const extra = [6, 7].map(i =>
+      '<label class="cb-label" id="clabel-' + i + '">' +
+      '<input type="checkbox" id="cb-' + i + '" onchange="toggleCheck(' + i + ')">' +
+      '<input type="text" id="cname-' + i + '" placeholder="Naam speler ' + (i - 5) + '" ' +
+      'style="background:transparent;border:none;border-bottom:1px solid var(--border);' +
+      'outline:none;font-family:Arial,sans-serif;font-size:0.9rem;color:var(--text);width:100%;padding:2px 0;" ' +
+      'onclick="event.stopPropagation()">' +
+      '</label>').join('');
+    cont.innerHTML = fixed + extra;
+  }
+
+  function toggleCheck(i) {
+    const cb = document.getElementById('cb-' + i);
+    document.getElementById('clabel-' + i).classList.toggle('checked', cb.checked);
+  }
+
+  function startFromCheckboxes() {
+    const selected = [];
+    DEFAULT_PLAYERS.forEach((name, i) => {
+      if (document.getElementById('cb-' + i).checked) selected.push(name);
+    });
+    [6, 7].forEach(i => {
+      const cb = document.getElementById('cb-' + i);
+      if (cb && cb.checked) {
+        const nm = document.getElementById('cname-' + i).value.trim() || ('Speler ' + (i - 4));
+        selected.push(nm);
+      }
+    });
+    if (selected.length < 2) { showToast('Selecteer minimaal 2 spelers'); return; }
+    startGame(selected);
+  }
+
+  function startGame(sel) {
+    players = sel; rounds = []; totals = new Array(players.length).fill(0); reductionMode = false;
+    showScreen('game-screen');
+    buildTableHead(); renderTable(); renderEntryForm();
+  }
+
+  function buildTableHead() {
+    let html = '<tr><th>Ronde</th>';
+    players.forEach(p => html += '<th>' + p + '</th>');
+    document.getElementById('table-head').innerHTML = html + '</tr>';
+  }
+
+  function renderTable() {
+    let html = '';
+    rounds.forEach((round, r) => {
+      html += '<tr><td>R' + (r + 1) + '</td>';
+      round.forEach(s => {
+        const disp = s > 0 ? '+' + s : '' + s;
+        html += '<td class="' + (s < 0 ? 'c-green' : '') + '">' + disp + '</td>';
+      });
+      html += '</tr>';
+    });
+
+    html += '<tr class="subtotal"><td>Totaal</td>';
+    totals.forEach(t => {
+      const cls = t >= 80 ? 'c-high' : t >= 60 ? 'c-warn' : 'c-ok';
+      html += '<td class="' + cls + '">' + t + '</td>';
+    });
+    html += '</tr>';
+
+    if (rounds.length > 0) {
+      html += '<tr class="avgrow"><td>Gem.</td>';
+      totals.forEach(t => html += '<td>' + (t / rounds.length).toFixed(1) + '</td>');
+      html += '</tr>';
+    }
+
+    document.getElementById('table-body').innerHTML = html;
+    document.getElementById('info-chips').innerHTML = players.map((p, i) =>
+      '<div class="chip">' + p + ': <span>' + totals[i] + '</span></div>').join('');
+    document.getElementById('round-label').textContent = 'Ronde ' + (rounds.length + 1) + (reductionMode ? ' \uD83D\uDD3B' : '');
+  }
+
+  function renderEntryForm() {
+    document.getElementById('entry-title').textContent = 'Ronde ' + (rounds.length + 1) + ' \u2014 scores invoeren';
+    let html = '';
+    players.forEach((p, i) => {
+      html += '<div class="entry-field"><label>' + p + '</label>' +
+        '<input type="number" inputmode="numeric" class="score-input" id="entry-' + i + '" min="0" max="20" value="0"></div>';
+    });
+    document.getElementById('entry-grid').innerHTML = html;
+  }
+
+  function submitRound() {
+    const scores = [];
+    for (let i = 0; i < players.length; i++) {
+      const val = document.getElementById('entry-' + i).value;
+      if (val === '' || isNaN(parseInt(val))) { showToast('Vul score in voor ' + players[i]); return; }
+      scores.push(parseInt(val));
+    }
+    const sum = scores.reduce((a, b) => a + b, 0);
+    if (sum !== 20) { showToast('Totaal is ' + sum + ' \u2014 moet precies 20 zijn!'); return; }
+
+    const twentyIdx = scores.indexOf(20);
+    if (twentyIdx !== -1) { showTwentyChoice(twentyIdx, scores); return; }
+    applyScores(scores);
+  }
+
+  function showTwentyChoice(playerIdx, scores) {
+    document.getElementById('entry-card').innerHTML =
+      '<div class="entry-title">\u26A0\uFE0F ' + players[playerIdx] + ' heeft 20 punten!</div>' +
+      '<p style="color:var(--muted);margin-bottom:16px;font-size:0.9rem">Kies een optie:</p>' +
+      '<button class="btn green-btn" onclick=\'applyTwentyChoice(' + playerIdx + ',' + JSON.stringify(scores) + ',"self")\'>Zichzelf &minus;20 punten</button>' +
+      '<button class="btn danger" onclick=\'applyTwentyChoice(' + playerIdx + ',' + JSON.stringify(scores) + ',"others")\'>Alle anderen +20 punten</button>';
+  }
+
+  function applyTwentyChoice(playerIdx, scores, choice) {
+    if (choice === 'self') {
+      scores[playerIdx] = -20;
+    } else {
+      for (let i = 0; i < players.length; i++) { if (i !== playerIdx) scores[i] += 20; }
+    }
+    applyScores(scores);
+    document.getElementById('entry-card').innerHTML =
+      '<div class="entry-title" id="entry-title"></div>' +
+      '<div class="cheatsheet">' +
+        '<div class="cheat-item"><span class="cheat-suit">&#9829;</span> Harten x13 <span class="cheat-val">elk 1 pt</span></div>' +
+        '<div class="cheat-item"><span class="cheat-suit">&#9824;</span> Schoppenvrouw <span class="cheat-val">5 pt</span></div>' +
+        '<div class="cheat-item"><span class="cheat-suit">&#9827;</span> Klaverboer <span class="cheat-val">2 pt</span></div>' +
+        '<div class="cheat-item cheat-total"><span>Totaal per ronde</span><span class="cheat-val">= 20 pt</span></div>' +
+      '</div>' +
+      '<div class="entry-grid" id="entry-grid"></div>' +
+      '<button class="btn" onclick="submitRound()">Ronde bevestigen &#10003;</button>';
+  }
+
+  function applyScores(scores) {
+    const applied = scores.map(s => reductionMode ? -s : s);
+    rounds.push(applied);
+    applied.forEach((s, i) => {
+      totals[i] += s;
+      if (totals[i] < 0) totals[i] = Math.abs(totals[i]);
+    });
+    if (!reductionMode && Math.max(...totals) >= 100) {
+      reductionMode = true;
+      showBanner('\uD83D\uDD3B We gaan weer terug!');
+    }
+    renderTable();
+    if (reductionMode && totals.indexOf(0) !== -1) { showWinner(totals.indexOf(0)); return; }
+    renderEntryForm();
+    document.getElementById('entry-card').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function showWinner(idx) {
+    document.getElementById('winner-name').textContent = players[idx];
+    const sorted = players.map((p, i) => ({ name: p, total: totals[i] })).sort((a, b) => a.total - b.total);
+    document.getElementById('final-scores').innerHTML =
+      sorted.map(p => p.name + ': <strong style="color:var(--text)">' + p.total + ' pt</strong>').join('<br>');
+    showScreen('winner-screen');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetGame() {
+    rounds = []; totals = []; reductionMode = false;
+    document.getElementById('table-body').innerHTML = '';
+    showScreen('setup-screen');
+    initCheckboxes();
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function showBanner(msg) {
+    const b = document.getElementById('banner');
+    b.textContent = msg; b.style.display = 'block';
+    setTimeout(() => b.style.display = 'none', 3000);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  initCheckboxes();
+</script>
+</body>
+</html>
